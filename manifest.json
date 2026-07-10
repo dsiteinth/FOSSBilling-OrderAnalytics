@@ -3,10 +3,10 @@
     "type": "mod",
     "name": "Order Analytics",
     "description": "Advanced order analytics dashboard with charts, revenue tracking, top products, top clients and recent orders overview for FOSSBilling admin panel.",
-    "homepage_url": "https://github.com/FOSSBilling/FOSSBilling",
-    "author": "FOSSBilling Community",
-    "author_url": "https://www.fossbilling.org",
+    "homepage_url": "https://github.com/dsiteinth/FOSSBilling-OrderAnalytics",
+    "author": "DSITE.IN.TH",
+    "author_url": "https://dsite.in.th",
     "license": "Apache-2.0",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "minimum_boxbilling_version": "0.6.1"
 }
