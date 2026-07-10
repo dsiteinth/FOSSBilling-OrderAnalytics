@@ -45,3 +45,12 @@ OrderAnalytics/
 ## Changelog
 
 See the [CHANGELOG.md](CHANGELOG.md) file for details on version history.
+
+## ☕ Donate
+
+Support this project:
+
+- $5   https://linksplus.omise.co/lN1VTj2Obw
+- $10   https://linksplus.omise.co/3zeILGb32v
+- $25   https://linksplus.omise.co/cckjTvJlHq
+- $50   https://linksplus.omise.co/XmW40xA4yE
