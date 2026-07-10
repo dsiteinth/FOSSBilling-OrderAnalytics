@@ -933,7 +933,7 @@
             }
             
             const headers = ['Order ID', 'Product', 'Status', 'Price', 'Period', 'Client Name', 'Client Email', 'Date'];
-            let csvContent = headers.join(',') + '\n';
+            let csvContent = '\uFEFF' + headers.join(',') + '\n';
             
             result.forEach(row => {
                 const values = [
