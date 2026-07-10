@@ -79,7 +79,7 @@ class Service implements InjectionAwareInterface
     private function getStatusFilter(array $data, string $alias = ''): string
     {
         if (isset($data['exclude_pending']) && ($data['exclude_pending'] === true || $data['exclude_pending'] === 'true' || $data['exclude_pending'] === 1 || $data['exclude_pending'] === '1')) {
-            $prefix = $alias ? $alias . '.' : '';
+            $prefix = $alias ? $alias . '.' : 'client_order.';
             return " AND {$prefix}status != 'pending_setup' ";
         }
         return "";
@@ -88,7 +88,7 @@ class Service implements InjectionAwareInterface
     private function getHasInvoiceFilter(array $data, string $alias = ''): string
     {
         if (isset($data['has_invoice']) && ($data['has_invoice'] === true || $data['has_invoice'] === 'true' || $data['has_invoice'] === 1 || $data['has_invoice'] === '1')) {
-            $prefix = $alias ? $alias . '.' : '';
+            $prefix = $alias ? $alias . '.' : 'client_order.';
             return " AND EXISTS (SELECT 1 FROM invoice_item ii WHERE ii.rel_id = {$prefix}id AND ii.type = 'order') ";
         }
         return "";
@@ -98,7 +98,7 @@ class Service implements InjectionAwareInterface
     {
         if (!empty($data['category_id']) && $data['category_id'] !== 'all') {
             $catId = (int) $data['category_id'];
-            $prefix = $alias ? $alias . '.' : '';
+            $prefix = $alias ? $alias . '.' : 'client_order.';
             return " AND {$prefix}product_id IN (SELECT id FROM product WHERE product_category_id = {$catId}) ";
         }
         return "";
