@@ -9,10 +9,10 @@
 {% block breadcrumbs %}
     <ol class="breadcrumb">
         <li class="breadcrumb-item">
-            <a href="{{ '/'|alink }}">{{ 'Home'|trans }}</a>
+            <a href="{{ '/'|url }}">{{ 'Home'|trans }}</a>
         </li>
         <li class="breadcrumb-item">
-            <a href="{{ 'order'|alink }}">{{ 'Orders'|trans }}</a>
+            <a href="{{ 'order'|url }}">{{ 'Orders'|trans }}</a>
         </li>
         <li class="breadcrumb-item active" aria-current="page">{{ 'Order Analytics'|trans }}</li>
     </ol>
@@ -885,7 +885,7 @@
                     <td class="text-center"><span class="rank-number ${getRankClass(index)}">${index + 1}</span></td>
                     <td>
                         <div class="fw-medium">
-                            <a href="{{ 'client/manage'|alink }}/${item.client_id}" class="text-body">${item.client_name}</a>
+                            <a href="{{ 'client/manage/'|url }}${item.client_id}" class="text-body">${item.client_name}</a>
                         </div>
                         <div class="small text-secondary">${item.client_email}</div>
                     </td>
@@ -912,7 +912,7 @@
                 const tr = document.createElement('tr');
                 const date = formatDateDisplay(order.created_at);
                 tr.innerHTML = `
-                    <td><a href="{{ 'order/manage'|alink }}/${order.id}" class="fw-medium">#${order.id}</a></td>
+                    <td><a href="{{ 'order/manage/'|url }}${order.id}" class="fw-medium">#${order.id}</a></td>
                     <td>${order.title} <div class="small text-secondary">${order.period}</div></td>
                     <td>${order.client_name}</td>
                     <td class="text-center">${getStatusBadge(order.status)}</td>
