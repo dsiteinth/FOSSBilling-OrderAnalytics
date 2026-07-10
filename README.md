@@ -1,6 +1,6 @@
 # Order Analytics — FOSSBilling Module
 
-![Order Analytics Screenshot](screenshort.png)
+![Order Analytics Screenshot](screenshot.png)
 
 A comprehensive analytics dashboard for [FOSSBilling](https://www.fossbilling.org/), designed to give you deep insights into your sales, revenue growth, top-performing products, and top clients.
 
