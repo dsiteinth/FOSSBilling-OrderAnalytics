@@ -233,20 +233,40 @@ class Service implements InjectionAwareInterface
         $labels = [];
         
         $diffDays = round(($endTs - $startTs) / 86400);
-        for ($i = 0; $i <= $diffDays; $i++) {
-            $currDate = date('Y-m-d', strtotime("+$i days", $startTs));
-            $prevDate = date('Y-m-d', strtotime("+$i days", $prevStartTs));
-            
-            $currentDays[$currDate] = 0;
-            $previousDays[$prevDate] = 0;
-            $labels[] = date('d M', strtotime($currDate));
+        $groupByMonth = $diffDays > 90;
+        
+        if ($groupByMonth) {
+            $diffMonths = (date('Y', $endTs) - date('Y', $startTs)) * 12 + (date('m', $endTs) - date('m', $startTs));
+            for ($i = 0; $i <= $diffMonths; $i++) {
+                // Use first day of the month for reliable "+$i months" calculation
+                $startMonth = date('Y-m-01', $startTs);
+                $prevStartMonth = date('Y-m-01', $prevStartTs);
+                
+                $currDate = date('Y-m', strtotime("+$i months", strtotime($startMonth)));
+                $prevDate = date('Y-m', strtotime("+$i months", strtotime($prevStartMonth)));
+                
+                $currentDays[$currDate] = 0;
+                $previousDays[$prevDate] = 0;
+                $labels[] = date('M Y', strtotime($currDate . '-01'));
+            }
+            $sqlDateFormat = "'%Y-%m'";
+        } else {
+            for ($i = 0; $i <= $diffDays; $i++) {
+                $currDate = date('Y-m-d', strtotime("+$i days", $startTs));
+                $prevDate = date('Y-m-d', strtotime("+$i days", $prevStartTs));
+                
+                $currentDays[$currDate] = 0;
+                $previousDays[$prevDate] = 0;
+                $labels[] = date('d M', strtotime($currDate));
+            }
+            $sqlDateFormat = "'%Y-%m-%d'";
         }
 
         $statusFilter = $this->getStatusFilter($data);
         $categoryFilter = $this->getCategoryFilter($data);
         $hasInvoiceFilter = $this->getHasInvoiceFilter($data);
 
-        $sqlCurr = "SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as period_key, COUNT(1) as count
+        $sqlCurr = "SELECT DATE_FORMAT(created_at, {$sqlDateFormat}) as period_key, COUNT(1) as count
                     FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . $hasInvoiceFilter . " GROUP BY period_key";
         $rowsCurr = $dbal->executeQuery($sqlCurr, ['start' => $dates['start'], 'end' => $dates['end']])->fetchAllAssociative();
         foreach ($rowsCurr as $row) {
@@ -255,7 +275,7 @@ class Service implements InjectionAwareInterface
             }
         }
 
-        $sqlPrev = "SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as period_key, COUNT(1) as count
+        $sqlPrev = "SELECT DATE_FORMAT(created_at, {$sqlDateFormat}) as period_key, COUNT(1) as count
                     FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . $hasInvoiceFilter . " GROUP BY period_key";
         $rowsPrev = $dbal->executeQuery($sqlPrev, ['start' => $dates['prev_start'], 'end' => $dates['prev_end']])->fetchAllAssociative();
         foreach ($rowsPrev as $row) {
@@ -281,18 +301,37 @@ class Service implements InjectionAwareInterface
         $labels = [];
         
         $diffDays = round(($endTs - $startTs) / 86400);
-        for ($i = 0; $i <= $diffDays; $i++) {
-            $currDate = date('Y-m-d', strtotime("+$i days", $startTs));
-            $prevDate = date('Y-m-d', strtotime("+$i days", $prevStartTs));
-            
-            $currentDays[$currDate] = 0;
-            $previousDays[$prevDate] = 0;
-            $labels[] = date('d M', strtotime($currDate));
+        $groupByMonth = $diffDays > 90;
+        
+        if ($groupByMonth) {
+            $diffMonths = (date('Y', $endTs) - date('Y', $startTs)) * 12 + (date('m', $endTs) - date('m', $startTs));
+            for ($i = 0; $i <= $diffMonths; $i++) {
+                $startMonth = date('Y-m-01', $startTs);
+                $prevStartMonth = date('Y-m-01', $prevStartTs);
+                
+                $currDate = date('Y-m', strtotime("+$i months", strtotime($startMonth)));
+                $prevDate = date('Y-m', strtotime("+$i months", strtotime($prevStartMonth)));
+                
+                $currentDays[$currDate] = 0;
+                $previousDays[$prevDate] = 0;
+                $labels[] = date('M Y', strtotime($currDate . '-01'));
+            }
+            $sqlDateFormat = "'%Y-%m'";
+        } else {
+            for ($i = 0; $i <= $diffDays; $i++) {
+                $currDate = date('Y-m-d', strtotime("+$i days", $startTs));
+                $prevDate = date('Y-m-d', strtotime("+$i days", $prevStartTs));
+                
+                $currentDays[$currDate] = 0;
+                $previousDays[$prevDate] = 0;
+                $labels[] = date('d M', strtotime($currDate));
+            }
+            $sqlDateFormat = "'%Y-%m-%d'";
         }
 
         $invoiceCatFilter = $this->getInvoiceCategoryFilter($data);
 
-        $sqlCurr = "SELECT DATE_FORMAT(paid_at, '%Y-%m-%d') as period_key, SUM(base_income) as amount
+        $sqlCurr = "SELECT DATE_FORMAT(paid_at, {$sqlDateFormat}) as period_key, SUM(base_income) as amount
                     FROM invoice WHERE status = 'paid' AND paid_at BETWEEN :start AND :end" . $invoiceCatFilter . " GROUP BY period_key";
         $rowsCurr = $dbal->executeQuery($sqlCurr, ['start' => $dates['start'], 'end' => $dates['end']])->fetchAllAssociative();
         foreach ($rowsCurr as $row) {
@@ -301,7 +340,7 @@ class Service implements InjectionAwareInterface
             }
         }
 
-        $sqlPrev = "SELECT DATE_FORMAT(paid_at, '%Y-%m-%d') as period_key, SUM(base_income) as amount
+        $sqlPrev = "SELECT DATE_FORMAT(paid_at, {$sqlDateFormat}) as period_key, SUM(base_income) as amount
                     FROM invoice WHERE status = 'paid' AND paid_at BETWEEN :start AND :end" . $invoiceCatFilter . " GROUP BY period_key";
         $rowsPrev = $dbal->executeQuery($sqlPrev, ['start' => $dates['prev_start'], 'end' => $dates['prev_end']])->fetchAllAssociative();
         foreach ($rowsPrev as $row) {
