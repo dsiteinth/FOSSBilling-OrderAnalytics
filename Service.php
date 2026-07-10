@@ -284,7 +284,24 @@ class Service implements InjectionAwareInterface
             }
         }
 
-        return ['labels' => $labels, 'data' => array_values($currentDays), 'prev_data' => array_values($previousDays)];
+        $preset = $data['preset'] ?? 'custom';
+        $currLabel = date('d M Y', $startTs) . ' - ' . date('d M Y', $endTs);
+        $prevLabel = date('d M Y', $prevStartTs) . ' - ' . date('d M Y', strtotime($dates['prev_end']));
+        if ($preset === 'this_year' || $preset === 'year_to_date') {
+            $currLabel = date('Y', $startTs);
+            $prevLabel = date('Y', $prevStartTs);
+        } elseif ($preset === 'this_month' || $preset === 'last_month') {
+            $currLabel = date('M Y', $startTs);
+            $prevLabel = date('M Y', $prevStartTs);
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => array_values($currentDays),
+            'prev_data' => array_values($previousDays),
+            'curr_label' => $currLabel,
+            'prev_label' => $prevLabel
+        ];
     }
 
     public function getRevenueByPeriod(array $data = []): array
@@ -349,7 +366,24 @@ class Service implements InjectionAwareInterface
             }
         }
 
-        return ['labels' => $labels, 'data' => array_values($currentDays), 'prev_data' => array_values($previousDays)];
+        $preset = $data['preset'] ?? 'custom';
+        $currLabel = date('d M Y', $startTs) . ' - ' . date('d M Y', $endTs);
+        $prevLabel = date('d M Y', $prevStartTs) . ' - ' . date('d M Y', strtotime($dates['prev_end']));
+        if ($preset === 'this_year' || $preset === 'year_to_date') {
+            $currLabel = date('Y', $startTs);
+            $prevLabel = date('Y', $prevStartTs);
+        } elseif ($preset === 'this_month' || $preset === 'last_month') {
+            $currLabel = date('M Y', $startTs);
+            $prevLabel = date('M Y', $prevStartTs);
+        }
+
+        return [
+            'labels' => $labels,
+            'data' => array_values($currentDays),
+            'prev_data' => array_values($previousDays),
+            'curr_label' => $currLabel,
+            'prev_label' => $prevLabel
+        ];
     }
 
     public function getTopProducts(array $data = []): array

@@ -747,7 +747,7 @@
                 data: {
                     labels: result.labels,
                     datasets: [{
-                        label: '{{ "Current Period"|trans }}',
+                        label: result.curr_label || '{{ "Current Period"|trans }}',
                         data: result.data,
                         borderColor: '#206bc4',
                         backgroundColor: gradient,
@@ -760,7 +760,7 @@
                         pointRadius: 3,
                         pointHoverRadius: 6
                     }, {
-                        label: '{{ "Previous Period"|trans }}',
+                        label: result.prev_label || '{{ "Previous Period"|trans }}',
                         data: result.prev_data,
                         borderColor: '#adb5bd',
                         borderWidth: 2,
