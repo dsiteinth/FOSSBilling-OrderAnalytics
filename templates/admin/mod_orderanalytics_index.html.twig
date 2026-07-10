@@ -209,6 +209,10 @@
                 <input class="form-check-input" type="checkbox" id="exclude_pending" onchange="applyFilters()">
                 <label class="form-check-label pt-1" for="exclude_pending">{{ 'Exclude Pending'|trans }}</label>
             </div>
+            <div class="form-check form-switch mb-0 ms-2">
+                <input class="form-check-input" type="checkbox" id="has_invoice" onchange="applyFilters()">
+                <label class="form-check-label pt-1" for="has_invoice">{{ 'Has Invoice Only'|trans }}</label>
+            </div>
         </div>
         <div class="text-secondary small mt-2 mt-md-0" id="current-period-label">
             <!-- Populated by JS -->
@@ -516,6 +520,7 @@
         start_date: '',
         end_date: '',
         exclude_pending: false,
+        has_invoice: false,
         category_id: 'all'
     };
 
@@ -613,6 +618,7 @@
         const start = document.getElementById('start_date').value;
         const end = document.getElementById('end_date').value;
         const excludePending = document.getElementById('exclude_pending').checked;
+        const hasInvoice = document.getElementById('has_invoice').checked;
         const categoryId = document.getElementById('category-filter').value;
         
         if (!start || !end) {
@@ -629,6 +635,7 @@
             start_date: start, 
             end_date: end, 
             exclude_pending: excludePending,
+            has_invoice: hasInvoice,
             category_id: categoryId
         };
         

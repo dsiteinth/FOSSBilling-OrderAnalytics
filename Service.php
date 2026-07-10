@@ -85,6 +85,15 @@ class Service implements InjectionAwareInterface
         return "";
     }
 
+    private function getHasInvoiceFilter(array $data, string $alias = ''): string
+    {
+        if (isset($data['has_invoice']) && ($data['has_invoice'] === true || $data['has_invoice'] === 'true' || $data['has_invoice'] === 1 || $data['has_invoice'] === '1')) {
+            $prefix = $alias ? $alias . '.' : '';
+            return " AND EXISTS (SELECT 1 FROM invoice_item ii WHERE ii.rel_id = {$prefix}id AND ii.type = 'order') ";
+        }
+        return "";
+    }
+
     private function getCategoryFilter(array $data, string $alias = ''): string
     {
         if (!empty($data['category_id']) && $data['category_id'] !== 'all') {
@@ -120,18 +129,19 @@ class Service implements InjectionAwareInterface
         $summary = [];
         $statusFilter = $this->getStatusFilter($data);
         $categoryFilter = $this->getCategoryFilter($data);
+        $hasInvoiceFilter = $this->getHasInvoiceFilter($data);
 
         // Current period
-        $sql = "SELECT COUNT(1) FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter;
+        $sql = "SELECT COUNT(1) FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . $hasInvoiceFilter;
         $summary['total'] = (int) $dbal->executeQuery($sql, ['start' => $dates['start'], 'end' => $dates['end']])->fetchOne();
         
-        $sqlActive = "SELECT COUNT(1) FROM client_order WHERE status = 'active' AND created_at BETWEEN :start AND :end" . $categoryFilter;
+        $sqlActive = "SELECT COUNT(1) FROM client_order WHERE status = 'active' AND created_at BETWEEN :start AND :end" . $categoryFilter . $hasInvoiceFilter;
         $summary['active'] = (int) $dbal->executeQuery($sqlActive, ['start' => $dates['start'], 'end' => $dates['end']])->fetchOne();
         
-        $sqlPending = "SELECT COUNT(1) FROM client_order WHERE status = 'pending_setup' AND created_at BETWEEN :start AND :end" . $categoryFilter;
+        $sqlPending = "SELECT COUNT(1) FROM client_order WHERE status = 'pending_setup' AND created_at BETWEEN :start AND :end" . $categoryFilter . $hasInvoiceFilter;
         $summary['pending_setup'] = (int) $dbal->executeQuery($sqlPending, ['start' => $dates['start'], 'end' => $dates['end']])->fetchOne();
 
-        $sqlCanceled = "SELECT COUNT(1) FROM client_order WHERE status = 'canceled' AND created_at BETWEEN :start AND :end" . $categoryFilter;
+        $sqlCanceled = "SELECT COUNT(1) FROM client_order WHERE status = 'canceled' AND created_at BETWEEN :start AND :end" . $categoryFilter . $hasInvoiceFilter;
         $summary['canceled'] = (int) $dbal->executeQuery($sqlCanceled, ['start' => $dates['start'], 'end' => $dates['end']])->fetchOne();
         
         // Previous period
@@ -222,9 +232,10 @@ class Service implements InjectionAwareInterface
 
         $statusFilter = $this->getStatusFilter($data);
         $categoryFilter = $this->getCategoryFilter($data);
+        $hasInvoiceFilter = $this->getHasInvoiceFilter($data);
 
         $sqlCurr = "SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as period_key, COUNT(1) as count
-                    FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . " GROUP BY period_key";
+                    FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . $hasInvoiceFilter . " GROUP BY period_key";
         $rowsCurr = $dbal->executeQuery($sqlCurr, ['start' => $dates['start'], 'end' => $dates['end']])->fetchAllAssociative();
         foreach ($rowsCurr as $row) {
             if (isset($currentDays[$row['period_key']])) {
@@ -233,7 +244,7 @@ class Service implements InjectionAwareInterface
         }
 
         $sqlPrev = "SELECT DATE_FORMAT(created_at, '%Y-%m-%d') as period_key, COUNT(1) as count
-                    FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . " GROUP BY period_key";
+                    FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . $hasInvoiceFilter . " GROUP BY period_key";
         $rowsPrev = $dbal->executeQuery($sqlPrev, ['start' => $dates['prev_start'], 'end' => $dates['prev_end']])->fetchAllAssociative();
         foreach ($rowsPrev as $row) {
             if (isset($previousDays[$row['period_key']])) {
@@ -297,6 +308,7 @@ class Service implements InjectionAwareInterface
         $limit = isset($data['limit']) ? (int) $data['limit'] : 10;
         $statusFilter = $this->getStatusFilter($data, 'co');
         $categoryFilter = $this->getCategoryFilter($data, 'co');
+        $hasInvoiceFilter = $this->getHasInvoiceFilter($data, 'co');
 
         $sql = "SELECT co.title as product_title,
                        pc.title as category_title,
@@ -305,7 +317,7 @@ class Service implements InjectionAwareInterface
                 FROM client_order co
                 LEFT JOIN product p ON co.product_id = p.id
                 LEFT JOIN product_category pc ON p.product_category_id = pc.id
-                WHERE (co.group_master = 1 OR co.group_id IS NULL) AND co.created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . "
+                WHERE (co.group_master = 1 OR co.group_id IS NULL) AND co.created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . $hasInvoiceFilter . "
                 GROUP BY co.title, pc.title
                 ORDER BY total_revenue DESC
                 LIMIT " . $limit;
@@ -321,6 +333,7 @@ class Service implements InjectionAwareInterface
         $limit = isset($data['limit']) ? (int) $data['limit'] : 10;
         $statusFilter = $this->getStatusFilter($data, 'co');
         $categoryFilter = $this->getCategoryFilter($data, 'co');
+        $hasInvoiceFilter = $this->getHasInvoiceFilter($data, 'co');
 
         $sql = "SELECT c.id as client_id,
                        CONCAT(c.first_name, ' ', c.last_name) as client_name,
@@ -329,7 +342,7 @@ class Service implements InjectionAwareInterface
                        COALESCE(SUM(co.price), 0) as total_spent
                 FROM client_order co
                 JOIN client c ON co.client_id = c.id
-                WHERE co.created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . "
+                WHERE co.created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . $hasInvoiceFilter . "
                 GROUP BY c.id, c.first_name, c.last_name, c.email
                 ORDER BY total_spent DESC
                 LIMIT " . $limit;
@@ -345,6 +358,7 @@ class Service implements InjectionAwareInterface
         $limit = isset($data['limit']) ? (int) $data['limit'] : 10;
         $statusFilter = $this->getStatusFilter($data, 'co');
         $categoryFilter = $this->getCategoryFilter($data, 'co');
+        $hasInvoiceFilter = $this->getHasInvoiceFilter($data, 'co');
 
         $sql = "SELECT co.id,
                        co.title,
@@ -356,7 +370,7 @@ class Service implements InjectionAwareInterface
                        c.email as client_email
                 FROM client_order co
                 JOIN client c ON co.client_id = c.id
-                WHERE co.created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . "
+                WHERE co.created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter . $hasInvoiceFilter . "
                 ORDER BY co.created_at DESC
                 LIMIT " . $limit;
 
@@ -370,6 +384,7 @@ class Service implements InjectionAwareInterface
         $dates = $this->parseDateRange($data);
         $statusFilter = $this->getStatusFilter($data, 'co');
         $categoryFilter = $this->getCategoryFilter($data, 'co');
+        $hasInvoiceFilter = $this->getHasInvoiceFilter($data, 'co');
 
         // Join client_order with product and product_category
         $sql = "SELECT pc.title as category_title, COUNT(co.id) as count
@@ -377,7 +392,7 @@ class Service implements InjectionAwareInterface
                 JOIN product p ON co.product_id = p.id
                 JOIN product_category pc ON p.product_category_id = pc.id
                 WHERE co.created_at BETWEEN :start AND :end
-                  AND (co.group_master = 1 OR co.group_id IS NULL)" . $statusFilter . $categoryFilter . "
+                  AND (co.group_master = 1 OR co.group_id IS NULL)" . $statusFilter . $categoryFilter . $hasInvoiceFilter . "
                 GROUP BY pc.title
                 ORDER BY count DESC";
 
