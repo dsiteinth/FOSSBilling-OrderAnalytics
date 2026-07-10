@@ -195,9 +195,10 @@
             <select id="date-range-preset" class="form-select w-auto" onchange="onPresetChange()">
                 <option value="today">{{ 'Today'|trans }}</option>
                 <option value="last_7_days">{{ 'Last 7 Days'|trans }}</option>
-                <option value="last_30_days" selected>{{ 'Last 30 Days'|trans }}</option>
-                <option value="this_month">{{ 'This Month'|trans }}</option>
+                <option value="last_30_days">{{ 'Last 30 Days'|trans }}</option>
+                <option value="this_month" selected>{{ 'This Month'|trans }}</option>
                 <option value="last_month">{{ 'Last Month'|trans }}</option>
+                <option value="year_to_date">{{ 'Year to Date'|trans }}</option>
                 <option value="this_year">{{ 'This Year'|trans }}</option>
                 <option value="custom">{{ 'Custom Range'|trans }}</option>
             </select>
@@ -546,10 +547,9 @@
 
     // ─── Date Helpers ───
     function setDefaultDates() {
-        // Set default to last 30 days
+        // Set default to this_month
         const end = new Date();
-        const start = new Date();
-        start.setDate(end.getDate() - 29); // 30 days including today
+        const start = new Date(end.getFullYear(), end.getMonth(), 1);
 
         document.getElementById('start_date').value = formatDateForInput(start);
         document.getElementById('end_date').value = formatDateForInput(end);
@@ -605,8 +605,12 @@
                 start = new Date(end.getFullYear(), end.getMonth() - 1, 1);
                 end = new Date(end.getFullYear(), end.getMonth(), 0);
                 break;
+            case 'year_to_date':
+                start = new Date(end.getFullYear(), 0, 1);
+                break;
             case 'this_year':
                 start = new Date(end.getFullYear(), 0, 1);
+                end = new Date(end.getFullYear(), 11, 31);
                 break;
         }
 

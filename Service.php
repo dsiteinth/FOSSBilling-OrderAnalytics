@@ -33,7 +33,7 @@ class Service implements InjectionAwareInterface
 
     private function parseDateRange(array $data): array
     {
-        $startDateStr = $data['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
+        $startDateStr = $data['start_date'] ?? date('Y-m-01');
         $endDateStr = $data['end_date'] ?? date('Y-m-d');
         
         $preset = $data['preset'] ?? 'custom';
@@ -60,7 +60,7 @@ class Service implements InjectionAwareInterface
         } elseif ($preset === 'last_month') {
             $prevStart = strtotime(date('Y-m-d', $start) . ' -1 month');
             $prevEnd = strtotime(date('Y-m-t', $prevStart)); // Last day of that month
-        } elseif ($preset === 'this_year') {
+        } elseif ($preset === 'this_year' || $preset === 'year_to_date') {
             $prevStart = strtotime(date('Y-m-d', $start) . ' -1 year');
             $prevEnd = strtotime(date('Y-m-d', $end) . ' -1 year');
         } else {
