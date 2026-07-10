@@ -125,13 +125,13 @@ class Service implements InjectionAwareInterface
         $sql = "SELECT COUNT(1) FROM client_order WHERE created_at BETWEEN :start AND :end" . $statusFilter . $categoryFilter;
         $summary['total'] = (int) $dbal->executeQuery($sql, ['start' => $dates['start'], 'end' => $dates['end']])->fetchOne();
         
-        $sqlActive = "SELECT COUNT(1) FROM client_order WHERE status = 'active' AND created_at BETWEEN :start AND :end";
+        $sqlActive = "SELECT COUNT(1) FROM client_order WHERE status = 'active' AND created_at BETWEEN :start AND :end" . $categoryFilter;
         $summary['active'] = (int) $dbal->executeQuery($sqlActive, ['start' => $dates['start'], 'end' => $dates['end']])->fetchOne();
         
-        $sqlPending = "SELECT COUNT(1) FROM client_order WHERE status = 'pending_setup' AND created_at BETWEEN :start AND :end";
+        $sqlPending = "SELECT COUNT(1) FROM client_order WHERE status = 'pending_setup' AND created_at BETWEEN :start AND :end" . $categoryFilter;
         $summary['pending_setup'] = (int) $dbal->executeQuery($sqlPending, ['start' => $dates['start'], 'end' => $dates['end']])->fetchOne();
 
-        $sqlCanceled = "SELECT COUNT(1) FROM client_order WHERE status = 'canceled' AND created_at BETWEEN :start AND :end";
+        $sqlCanceled = "SELECT COUNT(1) FROM client_order WHERE status = 'canceled' AND created_at BETWEEN :start AND :end" . $categoryFilter;
         $summary['canceled'] = (int) $dbal->executeQuery($sqlCanceled, ['start' => $dates['start'], 'end' => $dates['end']])->fetchOne();
         
         // Previous period
