@@ -1,0 +1,32 @@
+name: Build and Attach Release Zip
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build zip with git archive
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          ZIP_NAME="OrderAnalytics-${TAG_NAME}.zip"
+          # Prefix the archive with the folder name OrderAnalytics
+          git archive --format=zip --prefix="OrderAnalytics/" -o "${ZIP_NAME}" HEAD
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.ZIP_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

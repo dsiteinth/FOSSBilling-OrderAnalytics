@@ -1,79 +1,47 @@
-# Order Analytics - FOSSBilling Extension
+# Order Analytics — FOSSBilling Module
 
-Advanced order analytics dashboard for FOSSBilling admin panel with interactive charts, revenue tracking, top products, top clients and recent orders overview.
+![Order Analytics Screenshot](screenshot.png)
 
-## Features
+A comprehensive analytics dashboard for [FOSSBilling](https://www.fossbilling.org/), designed to give you deep insights into your sales, revenue growth, top-performing products, and top clients.
 
-- **Summary Cards** — Total orders, active orders, revenue this month, total revenue with growth indicator
-- **Revenue Chart** — Interactive line chart showing revenue over time (30 days / 12 weeks / 12 months)
-- **Orders Chart** — Bar chart showing order volume over time with period switching
-- **Order Status Distribution** — Doughnut chart showing order breakdown by status
-- **Top Products** — Ranked table of best-selling products by order count and revenue
-- **Top Clients** — Ranked table of top clients by total spending
-- **Recent Orders** — Latest orders with status badges, client info and quick links
+**Compatibility:** Fully compatible with FOSSBilling 0.8.2+
 
-## Screenshots
+## Key Features
 
-After installation, navigate to **Orders → Order Analytics** in the admin panel.
+- **Advanced Filtering:** Filter the entire dashboard by custom Date Ranges and Product Categories in real-time.
+- **Pending Setup Toggle:** Easily exclude or include `pending_setup` orders with a single switch.
+- **Growth Metrics:** Summary cards showing Total Orders, Active Orders, Revenue, Refunds, and Average Order Value (AOV) with % growth indicators comparing to the previous period.
+- **Comparative Charts:** Beautiful Revenue Overview line chart that overlays the current period against the previous period.
+- **Distribution Charts:** Doughnut charts for "Product Categories" and "Top Payment Gateways".
+- **Leaderboards:** Discover your "Top Selling Products" and "Top Spenders/Clients".
+- **Sleek UI:** Modern dashboard built with Tabler components matching the FOSSBilling admin area.
 
 ## Installation
 
-1. Copy the `Orderanalytics` folder to your FOSSBilling `modules/` directory:
-   ```
-   your-fossbilling/modules/Orderanalytics/
-   ```
+1. Download the latest `.zip` release from the [Releases page](../../releases).
+2. Extract the archive and copy the `OrderAnalytics` folder into the `modules/` directory of your FOSSBilling installation.
+3. Log in to your FOSSBilling Admin area.
+4. Navigate to **Extensions > Modules**.
+5. Find **Order Analytics** and click install.
 
-2. Log in to your FOSSBilling admin panel
+## Project Structure
 
-3. Go to **Extensions → Overview**
-
-4. Find "Order Analytics" and click **Activate**
-
-5. Navigate to **Orders → Order Analytics** to view the dashboard
-
-## File Structure
-
-```
-Orderanalytics/
-├── manifest.json              # Module metadata
-├── icon.svg                   # Module icon
-├── README.md                  # This file
-├── Service.php                # Business logic & database queries
+```text
+OrderAnalytics/
+├── manifest.json
+├── README.md
+├── CHANGELOG.md
+├── icon.svg
 ├── Api/
-│   └── Admin.php              # Admin API endpoints
+│   └── Admin.php           # API endpoints
 ├── Controller/
-│   └── Admin.php              # Admin routes & navigation
+│   └── Admin.php           # Admin routes and menu registration
+├── Service.php             # Core logic and SQL queries
 └── templates/
     └── admin/
-        └── mod_orderanalytics_index.html.twig   # Dashboard template
+        └── mod_orderanalytics_index.html.twig # Dashboard UI
 ```
 
-## Requirements
+## Changelog
 
-- FOSSBilling 0.6.1 or later
-- PHP 8.1 or later
-
-## Technical Details
-
-- Uses existing `client_order` and `invoice` database tables — no schema changes required
-- Charts powered by [Chart.js](https://www.chartjs.org/) via CDN
-- Follows FOSSBilling module conventions and Tabler CSS framework
-- Supports staff member permissions (`view` permission for order analytics)
-- All data loaded via AJAX calls for fast initial page load
-
-## API Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `admin/orderanalytics/get_summary` | Order counts by status |
-| `admin/orderanalytics/get_revenue_stats` | Revenue statistics |
-| `admin/orderanalytics/get_revenue_chart` | Revenue chart data (supports `period` param) |
-| `admin/orderanalytics/get_orders_chart` | Orders chart data (supports `period` param) |
-| `admin/orderanalytics/get_top_products` | Top selling products |
-| `admin/orderanalytics/get_top_clients` | Top clients by spending |
-| `admin/orderanalytics/get_recent_orders` | Recent orders list |
-| `admin/orderanalytics/get_status_distribution` | Order status distribution |
-
-## License
-
-Apache-2.0
+See the [CHANGELOG.md](CHANGELOG.md) file for details on version history.
