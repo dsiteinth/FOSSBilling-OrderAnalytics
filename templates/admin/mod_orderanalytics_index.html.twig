@@ -784,7 +784,21 @@
                     },
                     plugins: {
                         legend: { display: true, position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } },
-                        tooltip: { padding: 12, callbacks: { label: (ctx) => ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y) } }
+                        tooltip: {
+                            padding: 12,
+                            callbacks: {
+                                label: (ctx) => {
+                                    const isPrev = ctx.datasetIndex === 1;
+                                    let dateStr = ctx.dataset.label;
+                                    if (!isPrev && result.curr_dates && result.curr_dates[ctx.dataIndex]) {
+                                        dateStr = result.curr_dates[ctx.dataIndex];
+                                    } else if (isPrev && result.prev_dates && result.prev_dates[ctx.dataIndex]) {
+                                        dateStr = result.prev_dates[ctx.dataIndex];
+                                    }
+                                    return dateStr + ': ' + formatCurrency(ctx.parsed.y);
+                                }
+                            }
+                        }
                     }
                 }
             });

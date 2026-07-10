@@ -231,6 +231,8 @@ class Service implements InjectionAwareInterface
         $currentDays = [];
         $previousDays = [];
         $labels = [];
+        $currDates = [];
+        $prevDates = [];
         
         $diffDays = round(($endTs - $startTs) / 86400);
         $groupByMonth = $diffDays > 90;
@@ -248,6 +250,8 @@ class Service implements InjectionAwareInterface
                 $currentDays[$currDate] = 0;
                 $previousDays[$prevDate] = 0;
                 $labels[] = date('M Y', strtotime($currDate . '-01'));
+                $currDates[] = date('M Y', strtotime($currDate . '-01'));
+                $prevDates[] = date('M Y', strtotime($prevDate . '-01'));
             }
             $sqlDateFormat = "'%Y-%m'";
         } else {
@@ -258,6 +262,8 @@ class Service implements InjectionAwareInterface
                 $currentDays[$currDate] = 0;
                 $previousDays[$prevDate] = 0;
                 $labels[] = date('d M', strtotime($currDate));
+                $currDates[] = date('d M Y', strtotime($currDate));
+                $prevDates[] = date('d M Y', strtotime($prevDate));
             }
             $sqlDateFormat = "'%Y-%m-%d'";
         }
@@ -297,6 +303,8 @@ class Service implements InjectionAwareInterface
 
         return [
             'labels' => $labels,
+            'curr_dates' => $currDates,
+            'prev_dates' => $prevDates,
             'data' => array_values($currentDays),
             'prev_data' => array_values($previousDays),
             'curr_label' => $currLabel,
@@ -316,6 +324,8 @@ class Service implements InjectionAwareInterface
         $currentDays = [];
         $previousDays = [];
         $labels = [];
+        $currDates = [];
+        $prevDates = [];
         
         $diffDays = round(($endTs - $startTs) / 86400);
         $groupByMonth = $diffDays > 90;
@@ -332,6 +342,8 @@ class Service implements InjectionAwareInterface
                 $currentDays[$currDate] = 0;
                 $previousDays[$prevDate] = 0;
                 $labels[] = date('M Y', strtotime($currDate . '-01'));
+                $currDates[] = date('M Y', strtotime($currDate . '-01'));
+                $prevDates[] = date('M Y', strtotime($prevDate . '-01'));
             }
             $sqlDateFormat = "'%Y-%m'";
         } else {
@@ -342,6 +354,8 @@ class Service implements InjectionAwareInterface
                 $currentDays[$currDate] = 0;
                 $previousDays[$prevDate] = 0;
                 $labels[] = date('d M', strtotime($currDate));
+                $currDates[] = date('d M Y', strtotime($currDate));
+                $prevDates[] = date('d M Y', strtotime($prevDate));
             }
             $sqlDateFormat = "'%Y-%m-%d'";
         }
@@ -379,6 +393,8 @@ class Service implements InjectionAwareInterface
 
         return [
             'labels' => $labels,
+            'curr_dates' => $currDates,
+            'prev_dates' => $prevDates,
             'data' => array_values($currentDays),
             'prev_data' => array_values($previousDays),
             'curr_label' => $currLabel,
