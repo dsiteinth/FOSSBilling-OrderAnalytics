@@ -8,5 +8,5 @@
     "author_url": "https://dsite.in.th",
     "license": "Apache-2.0",
     "version": "1.0.1",
-    "minimum_boxbilling_version": "0.6.1"
+    "minimum_fossbilling_version": "0.6.0"
 }
