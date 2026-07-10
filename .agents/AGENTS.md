@@ -1,6 +1,7 @@
 ### GitHub Release Creation
 When the user asks to create a new GitHub release:
-1. Do not attempt to use the `gh` CLI for release creation as it lacks authentication.
-2. Always generate and provide a pre-filled GitHub Release URL so the user can create it with one click.
-3. The URL format is: `https://github.com/<owner>/<repo>/releases/new?tag=<tag>&title=<title>&body=<body>`
-4. URL-encode the values for `tag`, `title`, and `body`.
+1. **First**, ensure that the `version` value in `manifest.json` strictly matches the new release version and the latest entry in `CHANGELOG.md`. Update these files and push them if they do not match.
+2. Do not attempt to use the `gh` CLI for release creation as it lacks authentication.
+3. Always generate and provide a pre-filled GitHub Release URL so the user can create it with one click.
+4. The URL format is: `https://github.com/<owner>/<repo>/releases/new?tag=<tag>&title=<title>&body=<body>`
+5. URL-encode the values for `tag`, `title`, and `body`.
