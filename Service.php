@@ -36,6 +36,8 @@ class Service implements InjectionAwareInterface
         $startDateStr = $data['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
         $endDateStr = $data['end_date'] ?? date('Y-m-d');
         
+        $preset = $data['preset'] ?? 'custom';
+        
         $start = strtotime($startDateStr);
         $end = strtotime($endDateStr);
         if (!$start || !$end) {
@@ -52,10 +54,20 @@ class Service implements InjectionAwareInterface
         $endDate = date('Y-m-d 23:59:59', $end);
         
         // Calculate previous period
-        $diffDays = round(($end - $start) / 86400) + 1;
-        
-        $prevStart = strtotime("-{$diffDays} days", $start);
-        $prevEnd = strtotime("-1 day", $start);
+        if ($preset === 'this_month') {
+            $prevStart = strtotime(date('Y-m-d', $start) . ' -1 month');
+            $prevEnd = strtotime(date('Y-m-d', $end) . ' -1 month');
+        } elseif ($preset === 'last_month') {
+            $prevStart = strtotime(date('Y-m-d', $start) . ' -1 month');
+            $prevEnd = strtotime(date('Y-m-t', $prevStart)); // Last day of that month
+        } elseif ($preset === 'this_year') {
+            $prevStart = strtotime(date('Y-m-d', $start) . ' -1 year');
+            $prevEnd = strtotime(date('Y-m-d', $end) . ' -1 year');
+        } else {
+            $diffDays = round(($end - $start) / 86400) + 1;
+            $prevStart = strtotime("-{$diffDays} days", $start);
+            $prevEnd = strtotime("-1 day", $start);
+        }
         
         $prevStartDate = date('Y-m-d 00:00:00', $prevStart);
         $prevEndDate = date('Y-m-d 23:59:59', $prevEnd);

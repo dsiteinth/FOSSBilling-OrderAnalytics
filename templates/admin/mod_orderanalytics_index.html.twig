@@ -621,6 +621,7 @@
         const excludePending = document.getElementById('exclude_pending').checked;
         const hasInvoice = document.getElementById('has_invoice').checked;
         const categoryId = document.getElementById('category-filter').value;
+        const preset = document.getElementById('date-range-preset').value;
         
         if (!start || !end) {
             FOSSBilling.message('Please select a valid date range', 'error');
@@ -635,6 +636,7 @@
         currentFilter = { 
             start_date: start, 
             end_date: end, 
+            preset: preset,
             exclude_pending: excludePending,
             has_invoice: hasInvoice,
             category_id: categoryId
