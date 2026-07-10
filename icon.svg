@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <line x1="18" y1="20" x2="18" y2="10"></line>
+  <line x1="12" y1="20" x2="12" y2="4"></line>
+  <line x1="6" y1="20" x2="6" y2="14"></line>
+  <path d="M2 20h20"></path>
+  <polyline points="22 4 15 8 9 2 2 9" fill="none"></polyline>
+  <circle cx="22" cy="4" r="1" fill="currentColor"></circle>
+  <circle cx="15" cy="8" r="1" fill="currentColor"></circle>
+  <circle cx="9" cy="2" r="1" fill="currentColor"></circle>
+  <circle cx="2" cy="9" r="1" fill="currentColor"></circle>
+</svg>

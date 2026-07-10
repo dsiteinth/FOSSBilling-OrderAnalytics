@@ -1,0 +1,959 @@
+{% extends request.ajax ? 'layout_blank.html.twig' : 'layout_default.html.twig' %}
+
+{% import 'macro_functions.html.twig' as mf %}
+
+{% set active_menu = 'order' %}
+
+{% block meta_title %}{{ 'Order Analytics'|trans }}{% endblock %}
+
+{% block breadcrumbs %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{{ '/'|url({ 'admin': 1 }) }}">{{ 'Home'|trans }}</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{{ 'order'|url({ 'admin': 1 }) }}">{{ 'Orders'|trans }}</a>
+        </li>
+        <li class="breadcrumb-item active">{{ 'Order Analytics'|trans }}</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+
+{# ─── INLINE STYLES for analytics dashboard ─── #}
+<style>
+    .analytics-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none;
+        border-radius: 8px;
+        height: 100%;
+    }
+    .analytics-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+    .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1.2;
+    }
+    .stat-label {
+        font-size: 0.8125rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+    .growth-badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        margin-top: 5px;
+    }
+    .growth-up {
+        background: rgba(47, 179, 68, 0.1);
+        color: #2fb344;
+    }
+    .growth-down {
+        background: rgba(214, 57, 57, 0.1);
+        color: #d63939;
+    }
+    .growth-neutral {
+        background: rgba(108, 117, 125, 0.1);
+        color: #6c757d;
+    }
+    .chart-container {
+        position: relative;
+        height: 320px;
+        width: 100%;
+    }
+    .chart-container-sm {
+        position: relative;
+        height: 260px;
+        width: 100%;
+    }
+    .table-analytics th {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6c757d;
+        font-weight: 600;
+        border-bottom: 2px solid #e0e5ec;
+    }
+    .table-analytics td {
+        vertical-align: middle;
+        padding: 10px 12px;
+    }
+    .status-badge {
+        font-size: 0.75rem;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    .section-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .card-analytics {
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+    .rank-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #f0f4f8;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #6c757d;
+    }
+    .rank-number.top-1 { background: #fff3bf; color: #e67700; }
+    .rank-number.top-2 { background: #e9ecef; color: #495057; }
+    .rank-number.top-3 { background: #ffe3cc; color: #d9480f; }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #e0e5ec;
+        border-radius: 50%;
+        border-top-color: #206bc4;
+        animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    .fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Utility for flex */
+    .gap-2 { gap: 0.5rem; }
+    .gap-3 { gap: 1rem; }
+</style>
+
+{# ─── PAGE HEADER & FILTER BAR ─── #}
+<div class="d-flex align-items-center justify-content-between mb-3 fade-in">
+    <div>
+        <h2 class="page-title mb-1">
+            <svg class="icon me-2" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            {{ 'Order Analytics'|trans }}
+        </h2>
+        <p class="text-secondary mb-0">{{ 'Comprehensive overview of your sales performance and order data.'|trans }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" onclick="exportDashboardToCSV()">
+            <svg class="icon me-1" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            {{ 'Export CSV'|trans }}
+        </button>
+    </div>
+</div>
+
+{# ─── FILTER BAR ─── #}
+<div class="card mb-4 fade-in">
+    <div class="card-body d-flex flex-wrap justify-content-between align-items-center py-3">
+        <div class="d-flex align-items-center flex-wrap gap-2">
+            <label class="form-label mb-0 fw-bold">{{ 'Category'|trans }}:</label>
+            <select id="category-filter" class="form-select w-auto" onchange="applyFilters()">
+                <option value="all">{{ 'All Categories'|trans }}</option>
+            </select>
+
+            <label class="form-label mb-0 fw-bold ms-2">{{ 'Date Range'|trans }}:</label>
+            <select id="date-range-preset" class="form-select w-auto" onchange="onPresetChange()">
+                <option value="today">{{ 'Today'|trans }}</option>
+                <option value="last_7_days">{{ 'Last 7 Days'|trans }}</option>
+                <option value="last_30_days" selected>{{ 'Last 30 Days'|trans }}</option>
+                <option value="this_month">{{ 'This Month'|trans }}</option>
+                <option value="last_month">{{ 'Last Month'|trans }}</option>
+                <option value="this_year">{{ 'This Year'|trans }}</option>
+                <option value="custom">{{ 'Custom Range'|trans }}</option>
+            </select>
+            <div id="custom-date-container" class="d-none align-items-center gap-2">
+                <input type="date" id="start_date" class="form-control" onchange="applyFilters()" />
+                <span class="text-secondary">to</span>
+                <input type="date" id="end_date" class="form-control" onchange="applyFilters()" />
+            </div>
+            <div class="form-check form-switch mb-0 ms-2">
+                <input class="form-check-input" type="checkbox" id="exclude_pending" onchange="applyFilters()">
+                <label class="form-check-label pt-1" for="exclude_pending">{{ 'Exclude Pending'|trans }}</label>
+            </div>
+        </div>
+        <div class="text-secondary small mt-2 mt-md-0" id="current-period-label">
+            <!-- Populated by JS -->
+        </div>
+    </div>
+</div>
+
+{# ─── SUMMARY CARDS ─── #}
+<div class="row row-cards mb-4" id="summary-cards">
+    <div class="col-sm-6 col-xl-2 col-lg-4">
+        <div class="card analytics-card fade-in">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="stat-icon bg-primary-lt me-3">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"></path>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <path d="M16 10a4 4 0 01-8 0"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">{{ 'Total Orders'|trans }}</div>
+                        <div class="stat-value" id="stat-total-orders"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+                <div id="stat-growth-total-orders" class="growth-badge growth-neutral">vs prev</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-sm-6 col-xl-2 col-lg-4">
+        <div class="card analytics-card fade-in" style="animation-delay: 0.1s">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="stat-icon bg-success-lt me-3">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">{{ 'Active Orders'|trans }}</div>
+                        <div class="stat-value text-success" id="stat-active-orders"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+                <div id="stat-growth-active-orders" class="growth-badge growth-neutral">vs prev</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3 col-lg-4">
+        <div class="card analytics-card fade-in" style="animation-delay: 0.2s">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="stat-icon bg-info-lt me-3">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">{{ 'Avg Order Value'|trans }} (AOV)</div>
+                        <div class="stat-value text-info" id="stat-aov"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+                <div id="stat-growth-aov" class="growth-badge growth-neutral">vs prev</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-sm-6 col-xl-3 col-lg-6">
+        <div class="card analytics-card fade-in" style="animation-delay: 0.3s">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="stat-icon bg-warning-lt me-3">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">{{ 'Gross Revenue'|trans }}</div>
+                        <div class="stat-value text-warning" id="stat-revenue"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+                <div id="stat-growth-revenue" class="growth-badge growth-neutral">vs prev</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-sm-6 col-xl-2 col-lg-6">
+        <div class="card analytics-card fade-in" style="animation-delay: 0.4s">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="stat-icon bg-danger-lt me-3">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                        </svg>
+                    </div>
+                    <div>
+                        <div class="stat-label">{{ 'Refunds'|trans }}</div>
+                        <div class="stat-value text-danger" id="stat-refunds"><div class="loading-spinner"></div></div>
+                    </div>
+                </div>
+                <div id="stat-growth-refunds" class="growth-badge growth-neutral">vs prev</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── CHARTS ROW ─── #}
+<div class="row row-cards mb-4">
+    {# REVENUE OVERVIEW #}
+    <div class="col-lg-8">
+        <div class="card card-analytics fade-in h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="section-title">
+                    <svg class="icon me-1 text-primary" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    {{ 'Revenue Overview'|trans }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {# PRODUCT CATEGORY DISTRIBUTION #}
+    <div class="col-lg-4">
+        <div class="card card-analytics fade-in h-100" style="animation-delay: 0.1s">
+            <div class="card-header">
+                <h3 class="section-title">
+                    <svg class="icon me-1 text-secondary" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                        <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                    </svg>
+                    {{ 'Product Categories'|trans }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container-sm mt-3">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── SECOND ROW: TOP PERFORMERS ─── #}
+<div class="row row-cards mb-4">
+    {# TOP PRODUCTS #}
+    <div class="col-lg-6">
+        <div class="card card-analytics fade-in h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="section-title">
+                    <svg class="icon me-1 text-warning" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                        <path d="M2 17l10 5 10-5"></path>
+                        <path d="M2 12l10 5 10-5"></path>
+                    </svg>
+                    {{ 'Top Selling Products'|trans }}
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-analytics table-hover mb-0" id="table-top-products">
+                        <thead>
+                            <tr>
+                                <th width="40" class="text-center">#</th>
+                                <th>{{ 'Product/Service'|trans }}</th>
+                                <th class="text-center">{{ 'Orders'|trans }}</th>
+                                <th class="text-end">{{ 'Revenue'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="text-center py-4"><div class="loading-spinner"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# TOP CLIENTS #}
+    <div class="col-lg-6">
+        <div class="card card-analytics fade-in h-100" style="animation-delay: 0.1s">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="section-title">
+                    <svg class="icon me-1 text-success" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    {{ 'Top Spenders (Clients)'|trans }}
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-analytics table-hover mb-0" id="table-top-clients">
+                        <thead>
+                            <tr>
+                                <th width="40" class="text-center">#</th>
+                                <th>{{ 'Client Name'|trans }}</th>
+                                <th class="text-center">{{ 'Orders'|trans }}</th>
+                                <th class="text-end">{{ 'Total Spent'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" class="text-center py-4"><div class="loading-spinner"></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ─── THIRD ROW: RECENT ORDERS & PAYMENT METHODS ─── #}
+<div class="row row-cards mb-4">
+    {# RECENT ORDERS #}
+    <div class="col-lg-8">
+        <div class="card card-analytics fade-in h-100">
+            <div class="card-header">
+                <h3 class="section-title">
+                    <svg class="icon me-1" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    {{ 'Recent Orders'|trans }}
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-analytics table-hover mb-0" id="table-recent-orders">
+                        <thead>
+                            <tr>
+                                <th>{{ 'ID'|trans }}</th>
+                                <th>{{ 'Product'|trans }}</th>
+                                <th>{{ 'Client'|trans }}</th>
+                                <th class="text-center">{{ 'Status'|trans }}</th>
+                                <th class="text-end">{{ 'Price'|trans }}</th>
+                                <th>{{ 'Date'|trans }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="loading-spinner"></div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# PAYMENT METHODS #}
+    <div class="col-lg-4">
+        <div class="card card-analytics fade-in h-100" style="animation-delay: 0.1s">
+            <div class="card-header">
+                <h3 class="section-title">
+                    <svg class="icon me-1 text-purple" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="5" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="2" y1="10" x2="22" y2="10"></line>
+                    </svg>
+                    {{ 'Payment Gateways'|trans }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="chart-container-sm mt-3">
+                    <canvas id="paymentMethodsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+    // ─── Chart Instances ───
+    let revenueChartInstance = null;
+    let categoryChartInstance = null;
+    let paymentMethodsChartInstance = null;
+
+    // ─── Chart.js Global Config ───
+    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#6c757d';
+    Chart.defaults.plugins.legend.display = false;
+
+    // ─── Global Filter State ───
+    let currentFilter = {
+        start_date: '',
+        end_date: '',
+        exclude_pending: false,
+        category_id: 'all'
+    };
+
+    // ─── Initializer ───
+    document.addEventListener('DOMContentLoaded', function() {
+        setDefaultDates();
+        loadCategoryFilter();
+        applyFilters();
+    });
+
+    function loadCategoryFilter() {
+        FOSSBilling.api.admin.post('product/category_get_pairs', {}, function(result) {
+            const select = document.getElementById('category-filter');
+            for (const [id, title] of Object.entries(result)) {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = title;
+                select.appendChild(option);
+            }
+        });
+    }
+
+    // ─── Date Helpers ───
+    function setDefaultDates() {
+        // Set default to last 30 days
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - 29); // 30 days including today
+
+        document.getElementById('start_date').value = formatDateForInput(start);
+        document.getElementById('end_date').value = formatDateForInput(end);
+    }
+
+    function formatDateForInput(date) {
+        const d = new Date(date);
+        let month = '' + (d.getMonth() + 1);
+        let day = '' + d.getDate();
+        const year = d.getFullYear();
+
+        if (month.length < 2) month = '0' + month;
+        if (day.length < 2) day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+
+    function formatDateDisplay(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    }
+
+    function onPresetChange() {
+        const preset = document.getElementById('date-range-preset').value;
+        const customContainer = document.getElementById('custom-date-container');
+        
+        if (preset === 'custom') {
+            customContainer.classList.remove('d-none');
+            customContainer.classList.add('d-flex');
+            return;
+        } else {
+            customContainer.classList.add('d-none');
+            customContainer.classList.remove('d-flex');
+        }
+
+        let end = new Date();
+        let start = new Date();
+
+        switch (preset) {
+            case 'today':
+                break; // start and end are today
+            case 'last_7_days':
+                start.setDate(end.getDate() - 6);
+                break;
+            case 'last_30_days':
+                start.setDate(end.getDate() - 29);
+                break;
+            case 'this_month':
+                start = new Date(end.getFullYear(), end.getMonth(), 1);
+                break;
+            case 'last_month':
+                start = new Date(end.getFullYear(), end.getMonth() - 1, 1);
+                end = new Date(end.getFullYear(), end.getMonth(), 0);
+                break;
+            case 'this_year':
+                start = new Date(end.getFullYear(), 0, 1);
+                break;
+        }
+
+        document.getElementById('start_date').value = formatDateForInput(start);
+        document.getElementById('end_date').value = formatDateForInput(end);
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const start = document.getElementById('start_date').value;
+        const end = document.getElementById('end_date').value;
+        const excludePending = document.getElementById('exclude_pending').checked;
+        const categoryId = document.getElementById('category-filter').value;
+        
+        if (!start || !end) {
+            FOSSBilling.message('Please select a valid date range', 'error');
+            return;
+        }
+        
+        if (new Date(start) > new Date(end)) {
+            FOSSBilling.message('Start date cannot be after end date', 'error');
+            return;
+        }
+
+        currentFilter = { 
+            start_date: start, 
+            end_date: end, 
+            exclude_pending: excludePending,
+            category_id: categoryId
+        };
+        
+        // Update label
+        document.getElementById('current-period-label').innerHTML = 
+            'Showing: <strong>' + formatDateDisplay(start) + ' - ' + formatDateDisplay(end) + '</strong>';
+
+        refreshAllData();
+    }
+
+    function refreshAllData() {
+        loadSummary();
+        loadRevenueStats();
+        loadRevenueChart();
+        loadCategoryChart();
+        loadPaymentMethodsChart();
+        loadTopProducts();
+        loadTopClients();
+        loadRecentOrders();
+    }
+
+    // ─── Formatters ───
+    function formatCurrency(value) {
+        return parseFloat(value).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    function renderGrowthBadge(elementId, growth) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        
+        if (growth > 0) {
+            el.className = 'growth-badge growth-up';
+            el.innerHTML = '↑ ' + growth + '% vs prev';
+        } else if (growth < 0) {
+            el.className = 'growth-badge growth-down';
+            el.innerHTML = '↓ ' + Math.abs(growth) + '% vs prev';
+        } else {
+            el.className = 'growth-badge growth-neutral';
+            el.innerHTML = '→ 0% vs prev';
+        }
+    }
+
+    function getStatusBadge(status) {
+        const map = {
+            'active': '<span class="status-badge bg-success-lt text-success">Active</span>',
+            'pending_setup': '<span class="status-badge bg-warning-lt text-warning">Pending</span>',
+            'suspended': '<span class="status-badge bg-secondary-lt text-secondary">Suspended</span>',
+            'canceled': '<span class="status-badge bg-danger-lt text-danger">Canceled</span>',
+            'failed_setup': '<span class="status-badge bg-purple-lt text-purple">Failed</span>',
+            'failed_renew': '<span class="status-badge bg-orange-lt text-orange">Failed</span>',
+        };
+        return map[status] || '<span class="status-badge bg-secondary-lt">' + status + '</span>';
+    }
+
+    function getRankClass(index) {
+        if (index === 0) return 'top-1';
+        if (index === 1) return 'top-2';
+        if (index === 2) return 'top-3';
+        return '';
+    }
+
+    // ─── Data Loaders ───
+    function loadSummary() {
+        FOSSBilling.api.admin.post('orderanalytics/get_summary', currentFilter, function(result) {
+            document.getElementById('stat-total-orders').textContent = result.total;
+            document.getElementById('stat-active-orders').textContent = result.active;
+            
+            renderGrowthBadge('stat-growth-total-orders', result.total_growth);
+            renderGrowthBadge('stat-growth-active-orders', result.active_growth);
+        });
+    }
+
+    function loadRevenueStats() {
+        FOSSBilling.api.admin.post('orderanalytics/get_revenue_stats', currentFilter, function(result) {
+            document.getElementById('stat-revenue').textContent = formatCurrency(result.total);
+            document.getElementById('stat-refunds').textContent = formatCurrency(result.refunds);
+            document.getElementById('stat-aov').textContent = formatCurrency(result.aov);
+
+            renderGrowthBadge('stat-growth-revenue', result.growth);
+            renderGrowthBadge('stat-growth-refunds', result.refunds_growth);
+            renderGrowthBadge('stat-growth-aov', result.aov_growth);
+        });
+    }
+
+    function loadRevenueChart() {
+        FOSSBilling.api.admin.post('orderanalytics/get_revenue_chart', currentFilter, function(result) {
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+
+            if (revenueChartInstance) {
+                revenueChartInstance.destroy();
+            }
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+            gradient.addColorStop(0, 'rgba(32, 107, 196, 0.15)');
+            gradient.addColorStop(1, 'rgba(32, 107, 196, 0.01)');
+
+            revenueChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: result.labels,
+                    datasets: [{
+                        label: '{{ "Current Period"|trans }}',
+                        data: result.data,
+                        borderColor: '#206bc4',
+                        backgroundColor: gradient,
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#206bc4',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }, {
+                        label: '{{ "Previous Period"|trans }}',
+                        data: result.prev_data,
+                        borderColor: '#adb5bd',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4,
+                        pointBackgroundColor: '#adb5bd',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } },
+                        y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { callback: formatCurrency } }
+                    },
+                    plugins: {
+                        legend: { display: true, position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } },
+                        tooltip: { padding: 12, callbacks: { label: (ctx) => ctx.dataset.label + ': ' + formatCurrency(ctx.parsed.y) } }
+                    }
+                }
+            });
+        });
+    }
+
+    function loadCategoryChart() {
+        FOSSBilling.api.admin.post('orderanalytics/get_category_distribution', currentFilter, function(result) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            if (categoryChartInstance) categoryChartInstance.destroy();
+
+            categoryChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: result.labels,
+                    datasets: [{
+                        data: result.data,
+                        backgroundColor: result.colors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } }
+                    }
+                }
+            });
+        });
+    }
+
+    function loadPaymentMethodsChart() {
+        FOSSBilling.api.admin.post('orderanalytics/get_payment_methods', currentFilter, function(result) {
+            const ctx = document.getElementById('paymentMethodsChart').getContext('2d');
+            if (paymentMethodsChartInstance) paymentMethodsChartInstance.destroy();
+
+            paymentMethodsChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: result.labels,
+                    datasets: [{
+                        data: result.data,
+                        backgroundColor: '#ae3ec9',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    }
+
+    function loadTopProducts() {
+        const payload = Object.assign({}, currentFilter, { limit: 5 });
+        FOSSBilling.api.admin.post('orderanalytics/get_top_products', payload, function(result) {
+            const tbody = document.querySelector('#table-top-products tbody');
+            tbody.innerHTML = '';
+            
+            if (result.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary">No data</td></tr>';
+                return;
+            }
+
+            result.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                const categoryHtml = item.category_title ? `<div class="small text-secondary">${item.category_title}</div>` : '';
+                tr.innerHTML = `
+                    <td class="text-center"><span class="rank-number ${getRankClass(index)}">${index + 1}</span></td>
+                    <td>
+                        <div class="fw-medium">${item.product_title}</div>
+                        ${categoryHtml}
+                    </td>
+                    <td class="text-center">${item.order_count}</td>
+                    <td class="text-end fw-bold">${formatCurrency(item.total_revenue)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    function loadTopClients() {
+        const payload = Object.assign({}, currentFilter, { limit: 5 });
+        FOSSBilling.api.admin.post('orderanalytics/get_top_clients', payload, function(result) {
+            const tbody = document.querySelector('#table-top-clients tbody');
+            tbody.innerHTML = '';
+            
+            if (result.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-secondary">No data</td></tr>';
+                return;
+            }
+
+            result.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="text-center"><span class="rank-number ${getRankClass(index)}">${index + 1}</span></td>
+                    <td>
+                        <div class="fw-medium">
+                            <a href="{{ 'client/manage'|url({ 'admin': 1 }) }}/${item.client_id}" class="text-body">${item.client_name}</a>
+                        </div>
+                        <div class="small text-secondary">${item.client_email}</div>
+                    </td>
+                    <td class="text-center">${item.order_count}</td>
+                    <td class="text-end fw-bold text-success">${formatCurrency(item.total_spent)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    function loadRecentOrders() {
+        const payload = Object.assign({}, currentFilter, { limit: 10 });
+        FOSSBilling.api.admin.post('orderanalytics/get_recent_orders', payload, function(result) {
+            const tbody = document.querySelector('#table-recent-orders tbody');
+            tbody.innerHTML = '';
+
+            if (result.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-secondary">No orders found in this period</td></tr>';
+                return;
+            }
+
+            result.forEach(order => {
+                const tr = document.createElement('tr');
+                const date = formatDateDisplay(order.created_at);
+                tr.innerHTML = `
+                    <td><a href="{{ 'order/manage'|url({ 'admin': 1 }) }}/${order.id}" class="fw-medium">#${order.id}</a></td>
+                    <td>${order.title} <div class="small text-secondary">${order.period}</div></td>
+                    <td>${order.client_name}</td>
+                    <td class="text-center">${getStatusBadge(order.status)}</td>
+                    <td class="text-end">${formatCurrency(order.price)}</td>
+                    <td class="text-secondary">${date}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+    }
+
+    // ─── CSV Export ───
+    function exportDashboardToCSV() {
+        FOSSBilling.api.admin.post('orderanalytics/get_recent_orders', Object.assign({}, currentFilter, {limit: 500}), function(result) {
+            if (!result || result.length === 0) {
+                FOSSBilling.message('No data to export', 'warning');
+                return;
+            }
+            
+            const headers = ['Order ID', 'Product', 'Status', 'Price', 'Period', 'Client Name', 'Client Email', 'Date'];
+            let csvContent = headers.join(',') + '\n';
+            
+            result.forEach(row => {
+                const values = [
+                    row.id,
+                    `"${row.title.replace(/"/g, '""')}"`,
+                    row.status,
+                    row.price,
+                    row.period,
+                    `"${row.client_name.replace(/"/g, '""')}"`,
+                    `"${row.client_email}"`,
+                    row.created_at
+                ];
+                csvContent += values.join(',') + '\n';
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "OrderAnalytics_Export_" + currentFilter.start_date + "_to_" + currentFilter.end_date + ".csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            FOSSBilling.message('Export completed');
+        });
+    }
+</script>
+{% endblock %}
